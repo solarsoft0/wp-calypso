@@ -88,7 +88,7 @@ export function renderTransactionAmount(
 			<div className="billing-history__transaction-tax-amount">
 				{ taxAmount }
 				{ estimated && (
-					<InfoPopover>
+					<InfoPopover position="bottom left">
 						{ translate( 'Tax amount is only an estimate', {
 							comment:
 								'Disclaimer indicating uncertaintanty about actual taxes that will be applied in the future',
