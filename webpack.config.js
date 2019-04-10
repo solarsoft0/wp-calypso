@@ -252,7 +252,7 @@ function getWebpackConfig( {
 					'social-logos/example': 'social-logos/build/example',
 					debug: path.resolve( __dirname, 'node_modules/debug' ),
 					store: 'store/dist/store.modern',
-					gridicons$: path.resolve( __dirname, 'client/components/async-gridicons' ),
+					gridicons$: path.resolve( __dirname, 'client/components/external-gridicons' ),
 				},
 				getAliasesForExtensions( {
 					extensionsDirectory: path.join( __dirname, 'client', 'extensions' ),
@@ -328,6 +328,13 @@ function getWebpackConfig( {
 	if ( ! config.isEnabled( 'desktop' ) ) {
 		webpackConfig.plugins.push(
 			new webpack.NormalModuleReplacementPlugin( /^lib[/\\]desktop$/, 'lodash/noop' )
+		);
+	}
+
+	// The SVG external content polyfill (svg4everybody) isn't needed for evergreen browsers, so don't bundle it.
+	if ( browserslistEnv === 'evergreen' ) {
+		webpackConfig.plugins.push(
+			new webpack.NormalModuleReplacementPlugin( /^svg4everybody$/, 'lodash/noop' )
 		);
 	}
 
