@@ -21,7 +21,9 @@ import Card from 'components/card';
 import CompactCard from 'components/card/compact';
 import config from 'config';
 import {
+	getDomainRegistrationAgreementUrl,
 	getName,
+	getRenewalPrice,
 	handleRenewNowClick,
 	isCancelable,
 	isExpired,
@@ -314,12 +316,20 @@ class ManagePurchase extends Component {
 			);
 		}
 
+		const registrationAgreementUrl = getDomainRegistrationAgreementUrl( purchase );
+		const domainRegistrationAgreementLinkText = translate( 'Domain Registration Agreement' );
+
 		return (
 			<div className="manage-purchase__content">
 				<span className="manage-purchase__description">{ description }</span>
 				<span className="manage-purchase__settings-link">
 					<ProductLink purchase={ purchase } selectedSite={ site } />
 				</span>
+				{ registrationAgreementUrl && (
+					<a href={ registrationAgreementUrl } target="_blank" rel="noopener noreferrer">
+						{ domainRegistrationAgreementLinkText }
+					</a>
+				) }
 			</div>
 		);
 	}
@@ -373,9 +383,10 @@ class ManagePurchase extends Component {
 						<div className="manage-purchase__description">{ purchaseType( purchase ) }</div>
 						<div className="manage-purchase__price">
 							<PlanPrice
-								rawPrice={ purchase.amount }
+								rawPrice={ getRenewalPrice( purchase ) }
 								currencyCode={ purchase.currencyCode }
 								taxText={ purchase.taxText }
+								isOnSale={ !! purchase.saleAmount }
 							/>
 						</div>
 					</header>

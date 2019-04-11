@@ -69,6 +69,7 @@ import { getCurrentUserCountryCode } from 'state/current-user/selectors';
 import { canDomainAddGSuite } from 'lib/domains/gsuite';
 import { getDomainNameFromReceiptOrCart } from 'lib/domains/utils';
 import { fetchSitesAndUser } from 'lib/signup/step-actions';
+import { siteQualifiesForPageBuilder, getEditHomeUrl } from 'lib/signup/page-builder';
 import { getProductsList, isProductsListFetching } from 'state/products-list/selectors';
 import QueryProducts from 'components/data/query-products-list';
 import { isRequestingSitePlans } from 'state/sites/plans/selectors';
@@ -448,20 +449,17 @@ export class Checkout extends React.Component {
 		}
 
 		if ( this.props.isEligibleForCheckoutToChecklist && receipt ) {
+			if ( this.props.redirectToPageBuilder ) {
+				return getEditHomeUrl( selectedSiteSlug );
+			}
 			const destination = abtest( 'improvedOnboarding' ) === 'main' ? 'checklist' : 'view';
 
 			return `/${ destination }/${ selectedSiteSlug }`;
 		}
 
-		/**
-		 * @TODO Enable when plan setup is completed on the My Plan page
-		 *
-		 * This route skips the checkout thank you page where plan setup currently
-		 * occurs. That's undesireable until the plans can be set up correctly on My Plan.
-		 */
-		// if ( this.props.isJetpackNotAtomic && isEnabled( 'jetpack/checklist' ) ) {
-		// 	return `/plans/my-plan/${ selectedSiteSlug }?thank-you`;
-		// }
+		if ( this.props.isJetpackNotAtomic && config.isEnabled( 'jetpack/checklist' ) ) {
+			return `/plans/my-plan/${ selectedSiteSlug }?thank-you`;
+		}
 
 		return this.props.selectedFeature && isValidFeatureKey( this.props.selectedFeature )
 			? `/checkout/thank-you/features/${
@@ -652,6 +650,7 @@ export class Checkout extends React.Component {
 		return (
 			<React.Fragment>
 				<SubscriptionLengthPicker
+					cart={ this.props.cart }
 					plans={ availableTerms }
 					initialValue={ planInCart.product_slug }
 					onChange={ this.handleTermChange }
@@ -772,6 +771,7 @@ export default connect(
 				selectedSiteId,
 				props.cart
 			),
+			redirectToPageBuilder: siteQualifiesForPageBuilder( state, selectedSiteId ),
 			productsList: getProductsList( state ),
 			isProductsListFetching: isProductsListFetching( state ),
 			isPlansListFetching: isRequestingPlans( state ),

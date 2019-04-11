@@ -1,6 +1,6 @@
 {
 	"name": "@automattic/calypso-color-schemes",
-	"version": "1.0.0-alpha.1",
+	"version": "1.0.0",
 	"description": "Calypso Shared Style Bits",
 	"author": "Automattic",
 	"license": "GPL-2.0-or-later",
@@ -18,10 +18,6 @@
 	},
 	"bugs": {
 		"url": "https://github.com/Automattic/wp-calypso/issues"
-	},
-	"engines": {
-		"node": "^10.13.0",
-		"npm": "^6.1.0"
 	},
 	"main": "dist/calypso-color-schemes.css",
 	"publishConfig": {

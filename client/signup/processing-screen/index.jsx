@@ -17,6 +17,7 @@ import { connect } from 'react-redux';
 import { showOAuth2Layout } from 'state/ui/oauth2-clients/selectors';
 import config from 'config';
 import { getCurrentUser } from 'state/current-user/selectors';
+import { isInPageBuilderTest, getEditHomeUrl } from 'lib/signup/page-builder';
 
 /**
  * Style dependencies
@@ -136,8 +137,15 @@ export class SignupProcessingScreen extends Component {
 			  );
 	}
 
-	showChecklistAfterLogin = () =>
-		this.props.loginHandler( { redirectTo: `/checklist/${ this.state.siteSlug }` } );
+	showChecklistAfterLogin = () => {
+		// we are hijacking this method slightly because our page builder
+		// test has the same logic for showing, except also being in the test
+		const redirectTo =
+			isInPageBuilderTest() && this.props.signupDependencies.siteType === 'business'
+				? getEditHomeUrl( this.state.siteSlug )
+				: `/checklist/${ this.state.siteSlug }`;
+		this.props.loginHandler( { redirectTo } );
+	};
 
 	shouldShowChecklist() {
 		const designType = ( this.props.steps || [] ).reduce( function( accumulator, step ) {

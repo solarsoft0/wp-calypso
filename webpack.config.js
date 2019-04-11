@@ -1,4 +1,3 @@
-/** @format */
 /**
  **** WARNING: No ES6 modules here. Not transpiled! ****
  */
@@ -19,7 +18,7 @@ const MomentTimezoneDataPlugin = require( 'moment-timezone-data-webpack-plugin' 
 const Minify = require( '@automattic/calypso-build/webpack/minify' );
 const SassConfig = require( '@automattic/calypso-build/webpack/sass' );
 const TranspileConfig = require( '@automattic/calypso-build/webpack/transpile' );
-const wordpressExternals = require( '@automattic/calypso-build/webpack/wordpress-externals' );
+const WordPressExternalDependenciesPlugin = require( '@automattic/wordpress-external-dependencies-plugin' );
 
 /**
  * Internal dependencies
@@ -42,7 +41,16 @@ const shouldEmitStats = process.env.EMIT_STATS && process.env.EMIT_STATS !== 'fa
 const shouldEmitStatsWithReasons = process.env.EMIT_STATS === 'withreasons';
 const shouldCheckForCycles = process.env.CHECK_CYCLES === 'true';
 const codeSplit = config.isEnabled( 'code-splitting' );
-const isCalypsoClient = process.env.CALYPSO_CLIENT === 'true';
+const isCalypsoClient = process.env.BROWSERSLIST_ENV !== 'server';
+const isDesktop = calypsoEnv === 'desktop';
+
+const defaultBrowserslistEnv = isCalypsoClient || isDesktop ? 'evergreen' : 'defaults';
+const browserslistEnv = process.env.BROWSERSLIST_ENV || defaultBrowserslistEnv;
+const extraPath = browserslistEnv === 'defaults' ? 'fallback' : browserslistEnv;
+
+if ( ! process.env.BROWSERSLIST_ENV ) {
+	process.env.BROWSERSLIST_ENV = browserslistEnv;
+}
 
 /*
  * Create reporter for ProgressPlugin (used with EMIT_STATS)
@@ -92,6 +100,42 @@ function createProgressHandler() {
 	};
 }
 
+const nodeModulesToTranspile = [
+	// general form is <package-name>/.
+	// The trailing slash makes sure we're not matching these as prefixes
+	// In some cases we do want prefix style matching (lodash. for lodash.assign)
+	'd3-array/',
+	'd3-scale/',
+	'debug/',
+];
+/**
+ * Check to see if we should transpile certain files in node_modules
+ * @param {String} filepath the path of the file to check
+ * @returns {Boolean} True if we should transpile it, false if not
+ *
+ * We had a thought to try to find the package.json and use the engines property
+ * to determine what we should transpile, but not all libraries set engines properly
+ * (see d3-array@2.0.0). Instead, we transpile libraries we know to have dropped Node 4 support
+ * are likely to remain so going forward.
+ */
+function shouldTranspileDependency( filepath ) {
+	// find the last index of node_modules and check from there
+	// we want <working>/node_modules/a-package/node_modules/foo/index.js to only match foo, not a-package
+	const marker = '/node_modules/';
+	const lastIndex = filepath.lastIndexOf( marker );
+	if ( lastIndex === -1 ) {
+		// we're not in node_modules
+		return false;
+	}
+
+	const checkFrom = lastIndex + marker.length;
+
+	return _.some(
+		nodeModulesToTranspile,
+		modulePart => filepath.substring( checkFrom, checkFrom + modulePart.length ) === modulePart
+	);
+}
+
 /**
  * Return a webpack config object
  *
@@ -118,8 +162,8 @@ function getWebpackConfig( {
 		mode: isDevelopment ? 'development' : 'production',
 		devtool: process.env.SOURCEMAP || ( isDevelopment ? '#eval' : false ),
 		output: {
-			path: path.join( __dirname, 'public' ),
-			publicPath: '/calypso/',
+			path: path.join( __dirname, 'public', extraPath ),
+			publicPath: `/calypso/${ extraPath }/`,
 			filename: '[name].[chunkhash].min.js', // prefer the chunkhash, which depends on the chunk, not the entire build
 			chunkFilename: '[name].[chunkhash].min.js', // ditto
 			devtoolModuleFilenameTemplate: 'app:///[resource-path]',
@@ -137,28 +181,31 @@ function getWebpackConfig( {
 			minimize: shouldMinify,
 			minimizer: Minify( {
 				cache: process.env.CIRCLECI
-					? `${ process.env.HOME }/terser-cache`
+					? `${ process.env.HOME }/terser-cache/${ extraPath }`
 					: 'docker' !== process.env.CONTAINER,
 				parallel: workerCount,
 				sourceMap: Boolean( process.env.SOURCEMAP ),
 				terserOptions: {
-					ecma: 5,
-					safari10: true,
 					mangle: calypsoEnv !== 'desktop',
 				},
 			} ),
 		},
 		module: {
-			// avoids this warning:
-			// https://github.com/localForage/localForage/issues/577
 			noParse: /[/\\]node_modules[/\\]localforage[/\\]dist[/\\]localforage\.js$/,
 			rules: [
 				TranspileConfig.loader( {
 					workerCount,
 					configFile: path.join( __dirname, 'babel.config.js' ),
-					cacheDirectory: path.join( __dirname, 'build', '.babel-client-cache' ),
+					cacheDirectory: path.join( __dirname, 'build', '.babel-client-cache', extraPath ),
 					cacheIdentifier,
 					exclude: /node_modules\//,
+				} ),
+				TranspileConfig.loader( {
+					workerCount,
+					configFile: path.resolve( __dirname, 'babel.dependencies.config.js' ),
+					cacheDirectory: path.join( __dirname, 'build', '.babel-client-cache', extraPath ),
+					cacheIdentifier,
+					include: shouldTranspileDependency,
 				} ),
 				{
 					test: /node_modules[/\\](redux-form|react-redux)[/\\]es/,
@@ -222,11 +269,16 @@ function getWebpackConfig( {
 			} ),
 			new webpack.NormalModuleReplacementPlugin( /^path$/, 'path-browserify' ),
 			isCalypsoClient && new webpack.IgnorePlugin( /^\.\/locale$/, /moment$/ ),
-			...SassConfig.plugins( { cssFilename, minify: ! isDevelopment } ),
-			new AssetsWriter( {
-				filename: 'assets.json',
-				path: path.join( __dirname, 'server', 'bundler' ),
-			} ),
+			...SassConfig.plugins( { filename: cssFilename, minify: ! isDevelopment } ),
+			isCalypsoClient &&
+				new AssetsWriter( {
+					filename:
+						browserslistEnv === 'defaults'
+							? 'assets-fallback.json'
+							: `assets-${ browserslistEnv }.json`,
+					path: path.join( __dirname, 'server', 'bundler' ),
+					assetExtraPath: extraPath,
+				} ),
 			new DuplicatePackageCheckerPlugin(),
 			shouldCheckForCycles &&
 				new CircularDependencyPlugin( {
@@ -252,12 +304,9 @@ function getWebpackConfig( {
 			new MomentTimezoneDataPlugin( {
 				startYear: 2000,
 			} ),
+			externalizeWordPressPackages && new WordPressExternalDependenciesPlugin(),
 		] ),
-		externals: _.compact( [
-			externalizeWordPressPackages && wordpressExternals,
-			externalizeWordPressPackages && 'wp',
-			'electron',
-		] ),
+		externals: [ 'electron' ],
 	};
 
 	if ( calypsoEnv === 'desktop' ) {

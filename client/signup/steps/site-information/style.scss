@@ -33,6 +33,12 @@
 		bottom: 3px;
 		right: 3px;
 		width: auto;
+		padding: 5px 8px;
+
+		.gridicon {
+			height: 24px;
+			width: 24px;
+		}
 	}
 }
 
@@ -45,8 +51,7 @@
 	.form-fieldset {
 		border-radius: 4px;
 		background: var( --color-white );
-		box-shadow: 0 3px 6px rgba( 0, 0, 0, 0.16 ),
-					0 3px 6px rgba( 0, 0, 0, 0.23 );
+		@include elevation ( 2dp );
 	}
 
 	label {
@@ -77,8 +82,12 @@
 		}
 
 		&:focus {
-			box-shadow: 0 0 0 2px var( --color-accent );
+			box-shadow: 0 0 0 3px var( --color-accent-light );
 		}
+	}
+
+	button {
+		@include elevation ( 1dp );
 	}
 
 	.card {

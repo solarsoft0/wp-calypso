@@ -49,6 +49,7 @@ import inlineSupportArticle from './inline-support-article/reducer';
 import invites from './invites/reducer';
 import jetpack from './jetpack/reducer';
 import jetpackConnect from './jetpack-connect/reducer';
+import jetpackProductInstall from './jetpack-product-install/reducer';
 import jetpackRemoteInstall from './jetpack-remote-install/reducer';
 import jetpackSync from './jetpack-sync/reducer';
 import jitm from './jitm/reducer';
@@ -56,7 +57,6 @@ import login from './login/reducer';
 import media from './media/reducer';
 import memberships from './memberships/reducer';
 import mailchimp from './mailchimp/reducer';
-import mobileDownloadSMS from './mobile-download-sms/reducer';
 import notices from './notices/reducer';
 import notificationSettings from './notification-settings/reducer';
 import { unseenCount as notificationsUnseenCount } from './notifications';
@@ -137,13 +137,13 @@ const reducers = {
 	invites,
 	jetpack,
 	jetpackConnect,
+	jetpackProductInstall,
 	jetpackRemoteInstall,
 	jetpackSync,
 	jitm,
 	login,
 	media,
 	memberships,
-	mobileDownloadSMS,
 	notices,
 	notificationSettings,
 	notificationsUnseenCount,

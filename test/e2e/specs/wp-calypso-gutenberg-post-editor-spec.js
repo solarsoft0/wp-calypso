@@ -1048,6 +1048,26 @@ describe( `[${ host }] Calypso Gutenberg Editor: Posts (${ screenSize })`, funct
 		} );
 	} );
 
+	describe( 'Use the Calypso Media Modal: @parallel', function() {
+		let fileDetails;
+
+		// Create image file for upload
+		before( async function() {
+			fileDetails = await mediaHelper.createFile();
+			return fileDetails;
+		} );
+
+		step( 'Can log in', async function() {
+			const loginFlow = new LoginFlow( driver, 'gutenbergSimpleSiteUser' );
+			return await loginFlow.loginAndStartNewPost( null, true );
+		} );
+
+		step( 'Can insert an image in an Image block with the Media Modal', async function() {
+			const gEditorComponent = await GutenbergEditorComponent.Expect( driver );
+			return await gEditorComponent.addImageFromMediaModal( fileDetails );
+		} );
+	} );
+
 	describe( 'Revert a post to draft: @parallel', function() {
 		describe( 'Publish a new post', function() {
 			const originalBlogPostTitle = dataHelper.randomPhrase();
@@ -1094,7 +1114,7 @@ describe( `[${ host }] Calypso Gutenberg Editor: Posts (${ screenSize })`, funct
 		} );
 	} );
 
-	describe.skip( 'Insert embeds: @parallel', function() {
+	describe( 'Insert embeds: @parallel', function() {
 		step( 'Can log in', async function() {
 			this.loginFlow = new LoginFlow( driver, 'gutenbergSimpleSiteUser' );
 			return await this.loginFlow.loginAndStartNewPost( null, true );
@@ -1112,7 +1132,7 @@ describe( `[${ host }] Calypso Gutenberg Editor: Posts (${ screenSize })`, funct
 				blockIdInstagram
 			);
 			await gEmbedsComponentInstagram.embedUrl( 'https://www.instagram.com/p/BlDOZMil933/' );
-			await gEmbedsComponentInstagram.isEmbeddedInEditor( this.instagramEditorSelector ); // TODO: check is it shown in the Editor
+			await gEmbedsComponentInstagram.isEmbeddedInEditor( this.instagramEditorSelector );
 
 			this.twitterEditorSelector = '.wp-block-embed-twitter';
 			const blockIdTwitter = await gEditorComponent.addBlock( 'Twitter' );
@@ -1122,12 +1142,11 @@ describe( `[${ host }] Calypso Gutenberg Editor: Posts (${ screenSize })`, funct
 			);
 			await gEmbedsComponentTwitter.isEmbeddedInEditor( this.twitterEditorSelector );
 
-			// Temporary disable Youtube check
-			// this.youtubeEditorSelector = '.wp-block-embed-youtube';
-			// const blockIdYouTube = await gEditorComponent.addBlock( 'YouTube' );
-			// const gEmbedsComponentYouTube = await EmbedsBlockComponent.Expect( driver, blockIdYouTube );
-			// await gEmbedsComponentYouTube.embedUrl( 'https://www.youtube.com/watch?v=xifhQyopjZM' );
-			// await gEmbedsComponentYouTube.isEmbeddedInEditor( this.youtubeEditorSelector ); // TODO: check is it shown in the Editor
+			this.youtubeEditorSelector = '.wp-block-embed-youtube';
+			const blockIdYouTube = await gEditorComponent.addBlock( 'YouTube' );
+			const gEmbedsComponentYouTube = await EmbedsBlockComponent.Expect( driver, blockIdYouTube );
+			await gEmbedsComponentYouTube.embedUrl( 'https://www.youtube.com/watch?v=xifhQyopjZM' );
+			await gEmbedsComponentYouTube.isEmbeddedInEditor( this.youtubeEditorSelector );
 
 			const errorShown = await gEditorComponent.errorDisplayed();
 			return assert.strictEqual( errorShown, false, 'There is an error shown on the editor page!' );

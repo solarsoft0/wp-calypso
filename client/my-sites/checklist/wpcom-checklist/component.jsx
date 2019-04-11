@@ -3,7 +3,7 @@
  * External dependencies
  */
 import page from 'page';
-import React, { PureComponent } from 'react';
+import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { find, get, some, includes, forEach } from 'lodash';
 import { isDesktop } from 'lib/viewport';
@@ -13,7 +13,7 @@ import { localize } from 'i18n-calypso';
  * Internal dependencies
  */
 import { getTaskList } from './wpcom-task-list';
-import Checklist from 'components/checklist';
+import { Checklist, Task } from 'components/checklist';
 import ChecklistBanner from './checklist-banner';
 import ChecklistBannerTask from './checklist-banner/task';
 import ChecklistNavigation from './checklist-navigation';
@@ -22,7 +22,6 @@ import ChecklistPromptTask from './checklist-prompt/task';
 import getSiteChecklist from 'state/selectors/get-site-checklist';
 import QueryPosts from 'components/data/query-posts';
 import QuerySiteChecklist from 'components/data/query-site-checklist';
-import Task from 'components/checklist/task';
 import { successNotice } from 'state/notices/actions';
 import { getPostsForQuery } from 'state/posts/selectors';
 import { getSelectedSiteId } from 'state/ui/selectors';
@@ -40,7 +39,6 @@ import userFactory from 'lib/user';
 import { launchSite } from 'state/sites/launch/actions';
 import isUnlaunchedSite from 'state/selectors/is-unlaunched-site';
 import createSelector from 'lib/create-selector';
-import { getLoginUrlWithTOSRedirect } from 'lib/google-apps';
 import { getDomainsBySiteId } from 'state/sites/domains/selectors';
 import {
 	showInlineHelpPopover,
@@ -50,6 +48,7 @@ import {
 } from 'state/inline-help/actions';
 import getEditorUrl from 'state/selectors/get-editor-url';
 import { emailManagement } from 'my-sites/email/paths';
+import PendingGSuiteTosNoticeDialog from 'my-sites/domains/components/domain-warnings/pending-gsuite-tos-notice-dialog';
 
 const userLib = userFactory();
 
@@ -60,6 +59,7 @@ class WpcomChecklistComponent extends PureComponent {
 		pendingRequest: false,
 		emailSent: false,
 		error: null,
+		gSuiteDialogVisible: false,
 	};
 
 	constructor() {
@@ -688,53 +688,71 @@ class WpcomChecklistComponent extends PureComponent {
 		);
 	};
 
+	onCloseGSuiteDialogClickHandler = () => {
+		this.setState( { gSuiteDialogVisible: false } );
+	};
+
+	onOpenGSuiteDialogClickHandler = () => {
+		this.setState( { gSuiteDialogVisible: true } );
+	};
+
 	renderGSuiteTOSAcceptedTask = ( TaskComponent, baseProps, task ) => {
 		const { domains, translate, userEmail } = this.props;
 
-		let loginUrlWithTOSRedirect;
+		let domainName;
+		let user;
 		if ( Array.isArray( domains ) && domains.length > 0 ) {
-			const domainName = domains[ 0 ].name;
-			const users = domains[ 0 ].googleAppsSubscription.pendingUsers;
-			loginUrlWithTOSRedirect = getLoginUrlWithTOSRedirect( users[ 0 ], domainName );
+			domainName = domains[ 0 ].name;
+			user = domains[ 0 ].googleAppsSubscription.pendingUsers[ 0 ];
 		}
 
 		return (
-			<TaskComponent
-				{ ...baseProps }
-				bannerImageSrc="/calypso/images/stats/tasks/email.svg"
-				title={ translate( 'You set up email for your site' ) }
-				description={ translate(
-					"{{strong}}You're almost done!{{/strong}} We've sent an email to %s. Log in and accept Google's Terms of Service to activate your G Suite account. {{link}}Didn't receive the email?{{/link}}",
-					{
-						components: {
-							strong: <strong />,
-							link: (
-								<a
-									onClick={ () =>
-										this.trackTaskStart( task, {
-											sub_step_name: 'gsuite_tos_accepted',
-											clicked_element: 'no_email_help_link',
-										} )
-									}
-									href={ `/help/contact` }
-								/>
-							),
-						},
-						args: [ userEmail ],
-					}
-				) }
-				isWarning={ true }
-				onClick={ () => {
-					if ( ! loginUrlWithTOSRedirect ) {
-						return;
-					}
+			<Fragment key={ baseProps.key }>
+				<TaskComponent
+					{ ...baseProps }
+					bannerImageSrc="/calypso/images/stats/tasks/email.svg"
+					title={ translate( 'You set up email for your site' ) }
+					description={ translate(
+						"{{strong}}You're almost done!{{/strong}} We've sent an email to %s. Log in and accept Google's Terms of Service to activate your G Suite account. {{link}}Didn't receive the email?{{/link}}",
+						{
+							components: {
+								strong: <strong />,
+								link: (
+									<a
+										onClick={ () =>
+											this.trackTaskStart( task, {
+												sub_step_name: 'gsuite_tos_accepted',
+												clicked_element: 'no_email_help_link',
+											} )
+										}
+										href={ `/help/contact` }
+									/>
+								),
+							},
+							args: [ userEmail ],
+						}
+					) }
+					isWarning={ true }
+					onClick={ () => {
+						if ( ! domainName ) {
+							return;
+						}
+						this.onOpenGSuiteDialogClickHandler();
+						this.trackTaskStart( task, {
+							sub_step_name: 'gsuite_tos_accepted',
+						} );
+					} }
+				/>
 
-					this.trackTaskStart( task, {
-						sub_step_name: 'gsuite_tos_accepted',
-					} );
-					window.open( loginUrlWithTOSRedirect, '_blank' );
-				} }
-			/>
+				<PendingGSuiteTosNoticeDialog
+					domainName={ domainName }
+					onClose={ this.onCloseGSuiteDialogClickHandler }
+					section={ 'gsuite-timeline-task' }
+					siteSlug={ this.props.siteSlug }
+					user={ user }
+					visible={ this.state.gSuiteDialogVisible }
+				/>
+			</Fragment>
 		);
 	};
 

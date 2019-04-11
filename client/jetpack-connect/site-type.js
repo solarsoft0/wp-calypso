@@ -13,19 +13,28 @@ import { localize } from 'i18n-calypso';
 import FormattedHeader from 'components/formatted-header';
 import jetpackOnly from './jetpack-only';
 import MainWrapper from './main-wrapper';
+import SkipButton from './skip-button';
 import SiteTypeForm from 'signup/steps/site-type/form';
 import withTrackingTool from 'lib/analytics/with-tracking-tool';
 import WpcomColophon from 'components/wpcom-colophon';
 import { getSelectedSiteId, getSelectedSiteSlug } from 'state/ui/selectors';
 import { saveSiteType } from 'state/jetpack-connect/actions';
+import { setSiteType } from 'state/signup/steps/site-type/actions';
 
 class JetpackSiteType extends Component {
-	handleSubmit = siteType => {
-		const { siteId, siteSlug } = this.props;
-
-		this.props.saveSiteType( siteId, siteType );
+	goToNextStep = () => {
+		const { siteSlug } = this.props;
 
 		page( `/jetpack/connect/site-topic/${ siteSlug }` );
+	};
+
+	handleSubmit = siteType => {
+		const { siteId } = this.props;
+
+		this.props.saveSiteType( siteId, siteType );
+		this.props.setSiteType( siteType );
+
+		this.goToNextStep();
 	};
 
 	render() {
@@ -43,6 +52,11 @@ class JetpackSiteType extends Component {
 
 					<SiteTypeForm submitForm={ this.handleSubmit } />
 
+					<SkipButton
+						onClick={ this.goToNextStep }
+						tracksEventName="calypso_jpc_skipped_site_type"
+					/>
+
 					<WpcomColophon />
 				</div>
 			</MainWrapper>
@@ -57,6 +71,7 @@ const connectComponent = connect(
 	} ),
 	{
 		saveSiteType,
+		setSiteType,
 	}
 );
 

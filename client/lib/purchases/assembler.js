@@ -24,10 +24,17 @@ function createPurchaseObject( purchase ) {
 			: null,
 		canDisableAutoRenew: Boolean( purchase.can_disable_auto_renew ),
 		canExplicitRenew: Boolean( purchase.can_explicit_renew ),
+		costToUnbundle: purchase.cost_to_unbundle
+			? Number( purchase.cost_to_unbundle )
+			: Number( purchase.amount ),
+		costToUnbundleText: purchase.cost_to_unbundle_display
+			? purchase.cost_to_unbundle_display
+			: purchase.price_text,
 		currencyCode: purchase.currency_code,
 		currencySymbol: purchase.currency_symbol,
 		description: purchase.description,
 		domain: purchase.domain,
+		domainRegistrationAgreementUrl: purchase.domain_registration_agreement_url || null,
 		error: null,
 		expiryDate: purchase.expiry_date,
 		expiryMoment: purchase.expiry_date ? i18n.moment( purchase.expiry_date ) : null,
@@ -58,6 +65,7 @@ function createPurchaseObject( purchase ) {
 		// only generate a moment if `renewDate` is present and positive
 		renewMoment:
 			purchase.renew_date && purchase.renew_date > '0' ? i18n.moment( purchase.renew_date ) : null,
+		saleAmount: purchase.sale_amount,
 		siteId: Number( purchase.blog_id ),
 		siteName: purchase.blogname,
 		subscribedDate: purchase.subscribed_date,

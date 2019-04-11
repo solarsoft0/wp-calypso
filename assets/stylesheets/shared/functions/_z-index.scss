@@ -72,8 +72,6 @@ $z-layers: (
 		'.stats-popular__empty': 1,
 		'.people-list-item__label': 1,
 		'.is-actionable .theme__thumbnail-label': 1,
-		'.is-section-themes.focus-sidebar #secondary': 1,
-		'.is-section-themes.focus-sites #secondary': 1,
 		'.accessible-focus .current-theme__button:focus': 1,
 		'.signup-processing-screen__processing-step.is-processing:before': 1,
 		'.accessible-focus .theme__more-button button:focus': 1,
@@ -208,8 +206,7 @@ $z-layers: (
 		'.detail-page__action-buttons': 200
 	),
 	'.popover': (
-		'.input-chrono__container .gridicons-calendar': 0,
-		'input.input-chrono': 1,
+		'.input-chrono__input': 1,
 		'.popover .popover__arrow': 1,
 		'.post-schedule__header': 1,
 		'.date-picker__nav-bar': 2,

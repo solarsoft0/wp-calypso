@@ -10,6 +10,7 @@ import { localize } from 'i18n-calypso';
 import config from 'config';
 import Gridicon from 'gridicons';
 import debugFactory from 'debug';
+import { concat, rearg } from 'lodash';
 
 /**
  * Internal dependencies
@@ -18,8 +19,7 @@ import Button from 'components/button';
 import SubscriptionText from 'my-sites/checkout/checkout/subscription-text';
 import PaymentCountrySelect from 'components/payment-country-select';
 import Input from 'my-sites/domains/components/form/input';
-import TermsOfService from './terms-of-service';
-import cartValues from 'lib/cart-values';
+import { getTaxCountryCode, getTaxPostalCode } from 'lib/cart-values';
 import wpcom from 'lib/wp';
 import { newCardPayment } from 'lib/store-transactions';
 import { setPayment } from 'lib/upgrades/actions';
@@ -32,7 +32,8 @@ import {
 	SUBMITTING_WPCOM_REQUEST,
 } from 'lib/store-transactions/step-types';
 import RecentRenewals from './recent-renewals';
-import DomainRegistrationRefundPolicy from './domain-registration-refund-policy';
+import CheckoutTerms from './checkout-terms';
+import { setTaxCountryCode, setTaxPostalCode } from 'lib/upgrades/actions/cart';
 
 const debug = debugFactory( 'calypso:checkout:payment:apple-pay' );
 
@@ -133,11 +134,6 @@ export class WebPaymentBox extends React.Component {
 		translate: PropTypes.func.isRequired,
 	};
 
-	state = {
-		country: null,
-		postalCode: null,
-	};
-
 	constructor() {
 		super();
 		this.detectedPaymentMethod = detectWebPaymentMethod();
@@ -218,6 +214,7 @@ export class WebPaymentBox extends React.Component {
 	 */
 	getPaymentRequestForApplePay = () => {
 		const { cart, translate } = this.props;
+		const { currency, total_tax } = cart;
 
 		const supportedPaymentMethods = [
 			{
@@ -231,6 +228,23 @@ export class WebPaymentBox extends React.Component {
 				},
 			},
 		];
+		let displayItems = cart.products.map( product => {
+			return {
+				label: product.product_name,
+				amount: {
+					currency: product.currency,
+					value: product.cost,
+				},
+			};
+		} );
+
+		if ( total_tax ) {
+			displayItems = concat( displayItems, {
+				label: translate( 'Tax', { comment: 'The tax amount line-item in payment request' } ),
+				amount: { currency: currency, value: total_tax },
+			} );
+		}
+
 		const paymentDetails = {
 			total: {
 				label: translate( 'Total' ),
@@ -239,15 +253,7 @@ export class WebPaymentBox extends React.Component {
 					value: cart.total_cost.toString(),
 				},
 			},
-			displayItems: cart.products.map( product => {
-				return {
-					label: product.product_name,
-					amount: {
-						currency: product.currency,
-						value: product.cost.toString(),
-					},
-				};
-			} ),
+			displayItems,
 		};
 
 		const paymentRequest = new PaymentRequest(
@@ -276,6 +282,7 @@ export class WebPaymentBox extends React.Component {
 	 */
 	getPaymentRequestForBasicCard = () => {
 		const { cart, translate } = this.props;
+		const { currency, total_tax } = cart;
 
 		const supportedPaymentMethods = [
 			{
@@ -285,6 +292,22 @@ export class WebPaymentBox extends React.Component {
 				},
 			},
 		];
+		let displayItems = cart.products.map( product => {
+			return {
+				label: product.product_name,
+				amount: {
+					currency: product.currency,
+					value: product.cost,
+				},
+			};
+		} );
+		if ( total_tax ) {
+			displayItems = concat( displayItems, {
+				label: translate( 'Tax', { comment: 'The tax amount line-item in payment request' } ),
+				amount: { currency, value: total_tax },
+			} );
+		}
+
 		const paymentDetails = {
 			total: {
 				label: translate( 'Total' ),
@@ -293,15 +316,7 @@ export class WebPaymentBox extends React.Component {
 					value: cart.total_cost,
 				},
 			},
-			displayItems: cart.products.map( product => {
-				return {
-					label: product.product_name,
-					amount: {
-						currency: product.currency,
-						value: product.cost,
-					},
-				};
-			} ),
+			displayItems,
 		};
 
 		return new PaymentRequest( supportedPaymentMethods, paymentDetails, PAYMENT_REQUEST_OPTIONS );
@@ -334,8 +349,8 @@ export class WebPaymentBox extends React.Component {
 								const cardRawDetails = {
 									tokenized_payment_data: token.paymentData,
 									name: payerName,
-									country: this.state.country,
-									'postal-code': this.state.postalCode,
+									country: getTaxCountryCode( this.props.cart ),
+									'postal-code': getTaxPostalCode( this.props.cart ),
 									card_brand: token.paymentMethod.network,
 								};
 
@@ -391,23 +406,13 @@ export class WebPaymentBox extends React.Component {
 	};
 
 	/**
-	 * @param {string} key    Should only be `country`.
-	 * @param {string} value  Should only be a country name.
-	 */
-	updateSelectedCountry = ( key, value ) => {
-		if ( 'country' === key ) {
-			this.setState( { country: value } );
-		}
-	};
-
-	/**
 	 * @param {object} event  Event object.
 	 */
 	updateSelectedPostalCode = event => {
 		const { name: key, value } = event.target;
 
 		if ( 'postal-code' === key ) {
-			this.setState( { postalCode: value } );
+			setTaxPostalCode( value );
 		}
 	};
 
@@ -415,13 +420,15 @@ export class WebPaymentBox extends React.Component {
 		/* eslint-disable wpcalypso/jsx-classname-namespace */
 		const paymentMethod = this.detectedPaymentMethod;
 		const { cart, translate, countriesList } = this.props;
+		const countryCode = getTaxCountryCode( cart );
+		const postalCode = getTaxPostalCode( cart );
 
 		if ( ! paymentMethod ) {
 			return null;
 		}
 
 		const buttonState = this.getButtonState();
-		const buttonDisabled = buttonState.disabled || ! this.state.country || ! this.state.postalCode;
+		const buttonDisabled = buttonState.disabled || ! countryCode || ! postalCode;
 		let button;
 
 		switch ( paymentMethod ) {
@@ -476,7 +483,8 @@ export class WebPaymentBox extends React.Component {
 							name="country"
 							label={ translate( 'Country', { textOnly: true } ) }
 							countriesList={ countriesList }
-							onCountrySelected={ this.updateSelectedCountry }
+							onCountrySelected={ rearg( setTaxCountryCode, [ 1 ] ) }
+							value={ countryCode }
 							eventFormName="Checkout Form"
 						/>
 						<Input
@@ -484,6 +492,7 @@ export class WebPaymentBox extends React.Component {
 							name="postal-code"
 							label={ translate( 'Postal Code', { textOnly: true } ) }
 							onChange={ this.updateSelectedPostalCode }
+							value={ postalCode }
 							eventFormName="Checkout Form"
 						/>
 					</div>
@@ -492,10 +501,8 @@ export class WebPaymentBox extends React.Component {
 				{ this.props.children }
 
 				<RecentRenewals cart={ cart } />
-				<TermsOfService
-					hasRenewableSubscription={ cartValues.cartItems.hasRenewableSubscription( cart ) }
-				/>
-				<DomainRegistrationRefundPolicy cart={ cart } />
+
+				<CheckoutTerms cart={ cart } />
 
 				<span className="payment-box__payment-buttons">
 					<span className="pay-button">

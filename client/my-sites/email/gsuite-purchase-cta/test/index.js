@@ -2,49 +2,33 @@
 /**
  * External dependencies
  */
-import { Provider } from 'react-redux';
+import { noop } from 'lodash';
 import React from 'react';
 import renderer from 'react-test-renderer';
 
 /**
  * Internal dependencies
  */
-import { createReduxStore } from 'state';
-import GSuitePurchaseCta from '../';
 
+import { GSuitePurchaseCta } from '../';
+
+// components to mock
 jest.mock( 'components/email-verification/email-verification-gate', () => 'EmailVerificationGate' );
+jest.mock( 'my-sites/email/gsuite-purchase-cta/sku-info', () => 'GSuitePurchaseCtaSkuInfo' );
 jest.mock( 'my-sites/email/gsuite-purchase-features', () => 'GSuitePurchaseFeatures' );
+jest.mock( 'components/data/query-products-list', () => 'QueryProductsList' );
 
 describe( 'GSuitePurchaseCta', () => {
-	test( 'it renders GSuitePurchaseCta with basic plan', () => {
-		const store = createReduxStore();
+	test( 'it renders GSuitePurchaseCta', () => {
 		const tree = renderer
 			.create(
-				<Provider store={ store }>
-					<GSuitePurchaseCta
-						annualPrice={ '$50' }
-						monthlyPrice={ '$5' }
-						productSlug={ 'gapps' }
-						selectedSite={ { ID: 'foo' } }
-					/>
-				</Provider>
-			)
-			.toJSON();
-		expect( tree ).toMatchSnapshot();
-	} );
-
-	test( 'it renders GSuitePurchaseCta with business plan', () => {
-		const store = createReduxStore();
-		const tree = renderer
-			.create(
-				<Provider store={ store }>
-					<GSuitePurchaseCta
-						annualPrice={ '$50' }
-						monthlyPrice={ '$5' }
-						productSlug={ 'gapps_unlimited' }
-						selectedSite={ { ID: 'foo' } }
-					/>
-				</Provider>
+				<GSuitePurchaseCta
+					currencyCode={ 'USD' }
+					domainName={ 'test.com' }
+					gsuiteBasicCost={ 72 }
+					recordTracksEvent={ noop }
+					selectedSiteSlug={ 'test.wordpress.com' }
+				/>
 			)
 			.toJSON();
 		expect( tree ).toMatchSnapshot();

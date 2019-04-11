@@ -9,8 +9,7 @@ import React, { PureComponent } from 'react';
  */
 import accept from 'lib/accept';
 import Button from 'components/button';
-import Checklist from '../';
-import Task from '../task';
+import { Checklist, Task } from '../';
 
 export default class ChecklistExample extends PureComponent {
 	static displayName = 'ChecklistExample';
@@ -61,6 +60,7 @@ export default class ChecklistExample extends PureComponent {
 						duration="10,000 minutes"
 						completed={ this.state.shaveYak }
 					/>
+					<Task title="Overwaxing banisters!" inProgress />
 				</Checklist>
 			</>
 		);
