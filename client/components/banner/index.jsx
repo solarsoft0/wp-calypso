@@ -15,7 +15,6 @@ import Gridicon from 'gridicons';
  * Internal dependencies
  */
 import {
-	getValidFeatureKeys,
 	planMatches,
 	isBloggerPlan,
 	isPersonalPlan,
@@ -24,6 +23,7 @@ import {
 	isEcommercePlan,
 } from 'lib/plans';
 import { GROUP_JETPACK, GROUP_WPCOM } from 'lib/plans/constants';
+import { getValidFeatureKeys } from 'lib/plans/features-list';
 import { addQueryArgs } from 'lib/url';
 import { recordTracksEvent } from 'state/analytics/actions';
 import { getSelectedSiteSlug } from 'state/ui/selectors';

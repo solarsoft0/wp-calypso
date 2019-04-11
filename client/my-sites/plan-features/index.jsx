@@ -39,6 +39,7 @@ import {
 	getPlanPath,
 	isFreePlan,
 	getBiennialPlan,
+	getPlanClass,
 } from 'lib/plans';
 import {
 	getPlanDiscountedRawPrice,
@@ -57,8 +58,6 @@ import {
 	isBestValue,
 	isMonthly,
 	isNew,
-	getPlanFeaturesObject,
-	getPlanClass,
 	PLAN_FREE,
 	TYPE_BLOGGER,
 	TYPE_PERSONAL,
@@ -66,6 +65,7 @@ import {
 	TYPE_BUSINESS,
 	GROUP_WPCOM,
 } from 'lib/plans/constants';
+import { getPlanFeaturesObject } from 'lib/plans/features-list';
 
 export class PlanFeatures extends Component {
 	render() {

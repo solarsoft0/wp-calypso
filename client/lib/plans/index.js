@@ -5,7 +5,7 @@
  */
 import moment from 'moment';
 import { format as urlFormat, parse as urlParse } from 'url';
-import { difference, get, includes, invoke, pick, values } from 'lodash';
+import { difference, get, includes, pick, values } from 'lodash';
 
 /**
  * Internal dependencies
@@ -13,8 +13,6 @@ import { difference, get, includes, invoke, pick, values } from 'lodash';
 import { isEnabled } from 'config';
 import { isFreeJetpackPlan, isJetpackPlan, isMonthly } from 'lib/products-values';
 import {
-	FEATURES_LIST,
-	PLANS_LIST,
 	PLAN_FREE,
 	PLAN_PERSONAL,
 	TERM_MONTHLY,
@@ -32,6 +30,7 @@ import {
 	PLAN_ANNUAL_PERIOD,
 	PLAN_BIENNIAL_PERIOD,
 } from './constants';
+import { PLANS_LIST } from './plans-list';
 
 /**
  * Module vars
@@ -51,24 +50,36 @@ export function getPlan( planKey ) {
 	return PLANS_LIST[ planKey ];
 }
 
-export function getValidFeatureKeys() {
-	return Object.keys( FEATURES_LIST );
-}
-
-export function isValidFeatureKey( feature ) {
-	return !! FEATURES_LIST[ feature ];
-}
-
-export function getFeatureByKey( feature ) {
-	return FEATURES_LIST[ feature ];
-}
-
-export function getFeatureTitle( feature ) {
-	return invoke( FEATURES_LIST, [ feature, 'getTitle' ] );
-}
-
 export function getPlanPath( plan ) {
 	return get( getPlan( plan ), 'getPathSlug', () => undefined )();
+}
+
+export function getPlanClass( planKey ) {
+	if ( isFreePlan( planKey ) ) {
+		return 'is-free-plan';
+	}
+
+	if ( isBloggerPlan( planKey ) ) {
+		return 'is-blogger-plan';
+	}
+
+	if ( isPersonalPlan( planKey ) ) {
+		return 'is-personal-plan';
+	}
+
+	if ( isPremiumPlan( planKey ) ) {
+		return 'is-premium-plan';
+	}
+
+	if ( isBusinessPlan( planKey ) ) {
+		return 'is-business-plan';
+	}
+
+	if ( isEcommercePlan( planKey ) ) {
+		return 'is-ecommerce-plan';
+	}
+
+	return '';
 }
 
 /**
