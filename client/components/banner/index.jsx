@@ -23,7 +23,6 @@ import {
 	isEcommercePlan,
 } from 'lib/plans';
 import { GROUP_JETPACK, GROUP_WPCOM } from 'lib/plans/constants';
-import { getValidFeatureKeys } from 'lib/plans/features-list';
 import { addQueryArgs } from 'lib/url';
 import { recordTracksEvent } from 'state/analytics/actions';
 import { getSelectedSiteSlug } from 'state/ui/selectors';
@@ -49,7 +48,7 @@ export class Banner extends Component {
 		dismissPreferenceName: PropTypes.string,
 		dismissTemporary: PropTypes.bool,
 		event: PropTypes.string,
-		feature: PropTypes.oneOf( getValidFeatureKeys() ),
+		feature: PropTypes.string,
 		href: PropTypes.string,
 		icon: PropTypes.string,
 		list: PropTypes.arrayOf( PropTypes.string ),
