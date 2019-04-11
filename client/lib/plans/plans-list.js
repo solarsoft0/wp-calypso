@@ -3,18 +3,15 @@
 /**
  * External dependencies
  */
-
 import React from 'react';
 import { compact, includes } from 'lodash';
 import i18n from 'i18n-calypso';
 
-import * as constants from './constants';
-
 /**
  * Internal dependencies
  */
-
 import { isEnabled } from 'config';
+import * as constants from './constants';
 
 const WPComGetBillingTimeframe = () =>
 	i18n.translate( '/month, billed annually or every two years' );
